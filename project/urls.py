@@ -15,7 +15,29 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf.urls import url, include
+from django.views.generic.base import TemplateView
+
+from rest_framework.schemas import get_schema_view
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+jwt_urlpatterns = [
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair')
+]
+
+api_urlpatterns = [
+    path('auth/', include(jwt_urlpatterns)),
+    path('openapi/', get_schema_view(
+        title="DRF API docs",
+        version="1.0.0",
+    ), name='openapi-schema'),
+    path('docs/', TemplateView.as_view(
+        template_name='swagger.html',
+        extra_context={'schema_url': 'openapi-schema'}
+    ), name='swagger-ui'),
+]
 
 urlpatterns = [
     path('', admin.site.urls),
+    path('api/', include(api_urlpatterns)),
 ]
