@@ -18,15 +18,23 @@ from django.urls import path
 from django.conf.urls import url, include
 from django.views.generic.base import TemplateView
 
+from rest_framework import routers
 from rest_framework.schemas import get_schema_view
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-jwt_urlpatterns = [
-    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair')
+from users.views import UserViewSet, GroupList
+
+router = routers.DefaultRouter()
+router.register(r'users', UserViewSet)
+
+auth_urlpatterns = [
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('groups/', GroupList.as_view(), name='list_auth_groups'),
 ]
 
 api_urlpatterns = [
-    path('auth/', include(jwt_urlpatterns)),
+    path('', include(router.urls)),
+    path('auth/', include(auth_urlpatterns)),
     path('openapi/', get_schema_view(
         title="DRF API docs",
         version="1.0.0",
