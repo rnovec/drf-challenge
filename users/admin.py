@@ -10,7 +10,7 @@ admin.site.register(Organization)
 class AdminUser(auth_admin.UserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('name', 'phone', 'birthdate')}),
+        ('Personal info', {'fields': ('name', 'phone', 'birthdate', 'organization')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser',
                                     'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
@@ -30,8 +30,8 @@ class AdminUser(auth_admin.UserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     change_password_form = auth_admin.AdminPasswordChangeForm
-    list_display = ('email', 'name', 'is_superuser')
-    list_filter = ('phone', 'is_staff', 'is_superuser', 'is_active', 'groups')
+    list_display = ('id', 'email', 'name', 'organization', 'is_staff')
+    list_filter = ('phone', 'organization', 'is_staff', 'is_superuser', 'is_active', 'groups')
     search_fields = ('name', 'email')
     ordering = ('email',)
     readonly_fields = ('last_login', 'date_joined',)
