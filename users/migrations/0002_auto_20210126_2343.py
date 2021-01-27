@@ -18,13 +18,6 @@ VIEWER_PERMS = [
     "view_user"
 ]
 
-USER_PERMS = [
-    "add_organization",
-    "view_organization",
-    "change_user",
-    "view_user"
-]
-
 
 def create_group_permissions(apps, schema_editor):
     for app_config in apps.get_app_configs():
@@ -46,15 +39,6 @@ def create_group_permissions(apps, schema_editor):
     if created:
         permissions_qs = Permission.objects.filter(
             codename__in=VIEWER_PERMS
-        )
-        group.permissions.set(permissions_qs)
-        group.save()
-
-    # User group
-    group, created = Group.objects.get_or_create(name='User')
-    if created:
-        permissions_qs = Permission.objects.filter(
-            codename__in=USER_PERMS
         )
         group.permissions.set(permissions_qs)
         group.save()
