@@ -26,7 +26,8 @@ from users.views import (
     UserViewSet,
     GroupList,
     OrganizationViewSet,
-    UserOrganizationViewSet
+    UserOrganizationViewSet,
+    InfoAPIView
 )
 
 router = routers.DefaultRouter()
@@ -42,6 +43,7 @@ auth_urlpatterns = [
 
 api_urlpatterns = [
     path('', include(router.urls)),
+    path('info/', InfoAPIView.as_view()),
     path('auth/', include(auth_urlpatterns)),
     path('openapi/', get_schema_view(
         title="DRF API docs",

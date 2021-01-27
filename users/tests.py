@@ -102,3 +102,35 @@ class APITests(APITestCase):
     
     def test_orgs(self):
         pass
+    
+    def test_info(self):
+        # sucess access to groups
+        response = self.client.get('/api/info/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.json(), UNAUTHORIZED_MESSAGE)
+
+        # get access token
+        data = {'email': 'admin@test.org', 'password': '12345'}
+        response = self.client.post('/api/auth/login/', data, format='json')
+        token = response.json()['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Should return {`user_name`, `id`, `organization_name`, `public_ip`} 
+        # Public Ip must be the internet public IP of the server where code is running
+        response = self.client.get('/api/info/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['user_name'], FAKE_USERS['ADMIN']['name'])
+        self.assertEqual(response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
+        self.assertEqual(response.json()['public_ip'], 'testserver')
+
+        # login with viewer account
+        self.client.login(email='viewer@test.org', password='12345')
+
+        response = self.client.get('/api/info/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()['user_name'], FAKE_USERS['VIEWER']['name'])
+        self.assertEqual(response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
+        self.assertEqual(response.json()['public_ip'], 'testserver')
+        
+
+    
