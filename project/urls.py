@@ -48,4 +48,6 @@ api_urlpatterns = [
 urlpatterns = [
     path('', admin.site.urls),
     path('api/', include(api_urlpatterns)),
+    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
+
 ]
