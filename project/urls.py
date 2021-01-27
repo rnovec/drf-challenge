@@ -22,10 +22,17 @@ from rest_framework import routers
 from rest_framework.schemas import get_schema_view
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from users.views import UserViewSet, GroupList
+from users.views import (
+    UserViewSet, 
+    GroupList, 
+    OrganizationViewSet, 
+    UserOrganizationViewSet
+)
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
+router.register(r'organizations', OrganizationViewSet)
+router.register(r'organizations/(?P<org_id>.+)/users', UserOrganizationViewSet)
 
 auth_urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -49,5 +56,4 @@ urlpatterns = [
     path('', admin.site.urls),
     path('api/', include(api_urlpatterns)),
     path("auth/", include("rest_framework.urls", namespace="rest_framework")),
-
 ]

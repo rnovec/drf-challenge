@@ -18,11 +18,23 @@ class GroupSerializer(serializers.ModelSerializer):
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
+        fields = ['id', 'name', 'phone', 'address']
+
+
+class OrganizationRelatedField(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ['id', 'name']
+
+
+class UserOrgSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
         fields = ['id', 'name']
 
 
 class UserDefaultSerializer(serializers.ModelSerializer):
-    organization = OrganizationSerializer(read_only=True)
+    organization = OrganizationRelatedField(read_only=True)
 
     groups = serializers.SlugRelatedField(
         many=True,
@@ -36,7 +48,7 @@ class UserDefaultSerializer(serializers.ModelSerializer):
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
-    organization = OrganizationSerializer(read_only=True)
+    organization = OrganizationRelatedField(read_only=True)
 
     class Meta:
         model = User
@@ -57,8 +69,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = User(name=validated_data['name'],
                     phone=validated_data['phone'],
                     email=validated_data['email'],
-                    birthdate=validated_data['birthdate'],
-        )
+                    birthdate=validated_data['birthdate'])
         user.organization = org
         user.set_password(validated_data['password'])
         user.save()
