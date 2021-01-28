@@ -64,14 +64,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        org = validated_data['org']
-        groups = validated_data['groups']
-        user = User(name=validated_data['name'],
-                    phone=validated_data['phone'],
-                    email=validated_data['email'],
-                    birthdate=validated_data['birthdate'])
-        user.organization = org
-        user.set_password(validated_data['password'])
+        user = User(name=validated_data.get('name'),
+                    phone=validated_data.get('phone'),
+                    email=validated_data.get('email'),
+                    birthdate=validated_data.get('birthdate'))
+        user.organization = validated_data.get('org')
+        user.set_password(validated_data.get('password'))
         user.save()
-        user.groups.set(groups)
+
+        groups = validated_data.get('groups')
+        if groups:
+            user.groups.set(groups)
         return user

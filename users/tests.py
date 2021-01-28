@@ -1,55 +1,11 @@
-from datetime import datetime
 
 from django.contrib.auth.models import Group
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from .models import User, Organization
-
-
-FAKE_ORGS = {
-    'AAAIMX': {
-        'name': 'AAAIMX',
-        'phone': '9999999',
-        'address': 'MID, MX'
-    },
-    'LHT': {
-        'name': 'Lighthouse Tech',
-        'phone': '111111',
-        'address': 'MID, MX'
-    }
-}
-
-FAKE_USERS = {
-    'ADMIN': {
-        'email': 'admin@test.org',
-        'name': 'Raul Novelo',
-        'password': '12345',
-        'phone': '123456789',
-        'birthdate': datetime.now()
-    },
-    'VIEWER': {
-        'email': 'viewer@test.org',
-        'name': 'Viewer User Example',
-        'password': '12345',
-        'phone': '987654321',
-        'birthdate': datetime.now()
-    },
-    'USER': {
-        'email': 'johndoe@test.org',
-        'name': 'John Doe',
-        'password': '12345',
-        'phone': '1357908642',
-        'birthdate': datetime.now()
-    }
-}
-
-USER_MODEL_FIELDS = ['id', 'organization', 'groups', 'password', 'last_login', 'is_superuser',
-                     'email', 'name', 'birthdate', 'phone', 'date_joined', 'is_staff', 'is_active', 'user_permissions']
-
-UNAUTHORIZED_MESSAGE = {
-    'detail': 'Authentication credentials were not provided.'
-}
+from .constants import (FAKE_USERS, FAKE_ORGS, USER_INFO_FIELDS,
+                        USER_MODEL_FIELDS, UNAUTHORIZED_MESSAGE)
 
 
 class APITests(APITestCase):
@@ -150,13 +106,73 @@ class APITests(APITestCase):
         response = self.client.get('/api/users/?search=Novelo&email=viewer@')
         self.assertEqual(response.json()['count'], 1)
 
-        # avoid access to users without permissions 
-        self.client.login(email='johndoe@test.org', password='12345')
+        # avoid access to users without permissions
+        self.client.login(email='guest@test.org', password='12345')
         response = self.client.get('/api/users/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_orgs(self):
-        pass
+    def test_retrieve_user(self):
+        """
+        Retrieve user information, and the organization id and name
+        """
+        guest = User.objects.get(email='guest@test.org')
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.get('/api/users/%d/' % guest.pk)
+        data = response.json()
+
+        # validate user and organization fields
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(list(data.keys())), sorted(USER_INFO_FIELDS))
+        self.assertEqual(
+            sorted(list(data['organization'].keys())), ['id', 'name'])
+
+    def test_create_users(self):
+        """
+        Create an user for the organization, must set password as well. 
+        Request user must be Administrator
+        """
+        data = {
+            'email': 'example@example.org',
+            'name': 'Example User',
+            'password': '54321'
+        }
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.post('/api/users/', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.post('/api/users/', data, format='json')
+        data = response.json()
+        user_created = User.objects.get(pk=data['id'])
+        user_admin = User.objects.get(email='admin@test.org')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(user_created.organization, user_admin.organization)
+
+    def test_update_users(self):
+        """
+        Update user information for the user_id if request user is
+        `Administrator` of his organization. Or request user is user_id
+        """
+        admin = User.objects.get(email='admin@test.org')
+        viewer = User.objects.get(email='viewer@test.org')
+        guest = User.objects.get(email='guest@test.org')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.patch(
+            '/api/users/%d/' % admin.id, {'email': 'example1@aaaimx.org'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # account owner
+        response = self.client.patch(
+            '/api/users/%d/' % guest.id, {'email': 'example2@aaaimx.org'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # administrator of the org
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.patch(
+            '/api/users/%d/' % viewer.id, {'phone': '12345'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
 
     def test_info(self):
         # sucess access to groups
@@ -190,4 +206,3 @@ class APITests(APITestCase):
         self.assertEqual(
             response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
         self.assertEqual(response.json()['public_ip'], 'testserver')
-
