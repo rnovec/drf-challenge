@@ -83,7 +83,7 @@ class APITests(APITestCase):
 
     def test_list_users(self):
         """
-        List all the users for the user organization 
+        List all the users for the user organization
         if user is `Administrator` or `Viewer`. Must return all the user model fields.
         Should support search by name, email. Should support filter by phone.
         """
@@ -123,12 +123,11 @@ class APITests(APITestCase):
         # validate user and organization fields
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(sorted(list(data.keys())), sorted(USER_INFO_FIELDS))
-        self.assertEqual(
-            sorted(list(data['organization'].keys())), ['id', 'name'])
+        self.assertEqual(sorted(list(data['organization'].keys())), ['id', 'name'])
 
     def test_create_users(self):
         """
-        Create an user for the organization, must set password as well. 
+        Create an user for the organization, must set password as well.
         Request user must be Administrator
         """
         data = {
@@ -173,6 +172,27 @@ class APITests(APITestCase):
             '/api/users/%d/' % viewer.id, {'phone': '12345'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_delete_users(self):
+        """
+        Delete user for the user_id if request user is `Administrator` of his organization
+        """
+        admin = User.objects.get(email='admin@test.org')
+        viewer = User.objects.get(email='viewer@test.org')
+        guest = User.objects.get(email='guest@test.org')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.delete('/api/users/%d/' % admin.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # account owner
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.delete('/api/users/%d/' % guest.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # administrator of the org
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.delete('/api/users/%d/' % viewer.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_info(self):
         # sucess access to groups
