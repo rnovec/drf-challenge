@@ -1,7 +1,8 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
-from .models import User, Organization
 
+from .models import User, Organization
+from .constants import USER_INFO_FIELDS, ORG_INFO_FIELDS, USER_CREATE_FIELDS
 
 class GroupSerializer(serializers.ModelSerializer):
     permissions = serializers.SlugRelatedField(
@@ -18,7 +19,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'phone', 'address']
+        fields = ORG_INFO_FIELDS
 
 
 class OrganizationRelatedField(serializers.ModelSerializer):
@@ -52,26 +53,24 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'email',
-                  'birthdate', 'organization']
+        fields = USER_INFO_FIELDS
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'email',
-                  'birthdate', 'groups', 'password']
+        fields = USER_CREATE_FIELDS
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        org = validated_data['org']
-        groups = validated_data['groups']
-        user = User(name=validated_data['name'],
-                    phone=validated_data['phone'],
-                    email=validated_data['email'],
-                    birthdate=validated_data['birthdate'])
-        user.organization = org
-        user.set_password(validated_data['password'])
+        user = User(name=validated_data.get('name'),
+                    phone=validated_data.get('phone'),
+                    email=validated_data.get('email'),
+                    birthdate=validated_data.get('birthdate'))
+        user.organization = validated_data.get('org')
+        user.set_password(validated_data.get('password'))
         user.save()
+
+        groups = validated_data.get('groups', [])
         user.groups.set(groups)
         return user

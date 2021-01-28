@@ -4,10 +4,12 @@ from rest_framework import (
     generics,
     status,
     permissions,
-    mixins
+    mixins,
+    views
 )
-from rest_framework.decorators import action
+from rest_framework.compat import coreapi
 from rest_framework.response import Response
+
 from .models import User, Organization
 from .serializers import (
     GroupSerializer,
@@ -25,6 +27,24 @@ class GroupList(generics.ListAPIView):
     """
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
+
+
+class InfoAPIView(views.APIView):
+    """
+    An API for viewing user and server info.
+    """
+
+    def get(self, request):
+        """
+        GET user name, organization and server information
+        Should return {`user_name`, `id`, `organization_name`, `public_ip`}
+        """
+        return Response({
+            'id': request.user.id,
+            'user_name': request.user.name,
+            'organization_name': request.user.organization.name,
+            'public_ip': request.get_host()
+        })
 
 
 class OrganizationViewSet(mixins.RetrieveModelMixin,

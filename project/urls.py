@@ -14,8 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 from django.conf.urls import url, include
+from django.urls import path
 from django.views.generic.base import TemplateView
 
 from rest_framework import routers
@@ -23,16 +23,18 @@ from rest_framework.schemas import get_schema_view
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from users.views import (
-    UserViewSet, 
-    GroupList, 
-    OrganizationViewSet, 
-    UserOrganizationViewSet
+    UserViewSet,
+    GroupList,
+    OrganizationViewSet,
+    UserOrganizationViewSet,
+    InfoAPIView
 )
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'organizations', OrganizationViewSet)
-router.register(r'organizations/(?P<org_id>.+)/users', UserOrganizationViewSet)
+router.register(r'organizations/(?P<org_id>.+)/users',
+                UserOrganizationViewSet, basename='organizations')
 
 auth_urlpatterns = [
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -42,6 +44,7 @@ auth_urlpatterns = [
 api_urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include(auth_urlpatterns)),
+    path('info/', InfoAPIView.as_view()),
     path('openapi/', get_schema_view(
         title="DRF API docs",
         version="1.0.0",
