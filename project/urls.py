@@ -14,8 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
 from django.conf.urls import url, include
+from django.urls import path
 from django.views.generic.base import TemplateView
 
 from rest_framework import routers
@@ -43,8 +43,8 @@ auth_urlpatterns = [
 
 api_urlpatterns = [
     path('', include(router.urls)),
-    path('info/', InfoAPIView.as_view()),
     path('auth/', include(auth_urlpatterns)),
+    path('info/', InfoAPIView.as_view()),
     path('openapi/', get_schema_view(
         title="DRF API docs",
         version="1.0.0",
