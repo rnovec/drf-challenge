@@ -72,7 +72,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user.set_password(validated_data.get('password'))
         user.save()
 
-        groups = validated_data.get('groups')
-        if groups:
-            user.groups.set(groups)
+        groups = validated_data.get('groups', [])
+        user.groups.set(groups)
         return user
