@@ -29,10 +29,12 @@ class GroupList(generics.ListAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
+
 class InfoAPIView(views.APIView):
     """
     An API for viewing user and server info.
     """
+
     def get(self, request):
         """
         GET user name, organization and server information

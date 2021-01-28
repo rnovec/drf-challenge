@@ -43,8 +43,8 @@ auth_urlpatterns = [
 
 api_urlpatterns = [
     path('', include(router.urls)),
-    path('info/', InfoAPIView.as_view()),
     path('auth/', include(auth_urlpatterns)),
+    path('info/', InfoAPIView.as_view()),
     path('openapi/', get_schema_view(
         title="DRF API docs",
         version="1.0.0",
