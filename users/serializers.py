@@ -1,7 +1,8 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
-from .models import User, Organization
 
+from .models import User, Organization
+from .constants import USER_INFO_FIELDS, ORG_INFO_FIELDS, USER_CREATE_FIELDS
 
 class GroupSerializer(serializers.ModelSerializer):
     permissions = serializers.SlugRelatedField(
@@ -18,7 +19,7 @@ class GroupSerializer(serializers.ModelSerializer):
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ['id', 'name', 'phone', 'address']
+        fields = ORG_INFO_FIELDS
 
 
 class OrganizationRelatedField(serializers.ModelSerializer):
@@ -52,15 +53,13 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'email',
-                  'birthdate', 'organization']
+        fields = USER_INFO_FIELDS
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'name', 'phone', 'email',
-                  'birthdate', 'groups', 'password']
+        fields = USER_CREATE_FIELDS
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):

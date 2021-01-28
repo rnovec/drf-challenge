@@ -1,12 +1,52 @@
 
+from datetime import datetime
 from django.contrib.auth.models import Group
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, APITestCase
 
 from .models import User, Organization
-from .constants import (FAKE_USERS, FAKE_ORGS, USER_INFO_FIELDS,
-                        USER_MODEL_FIELDS, UNAUTHORIZED_MESSAGE)
+from .constants import (
+    USER_INFO_FIELDS,
+    USER_MODEL_FIELDS, ORG_INFO_FIELDS, 
+    UNAUTHORIZED_MESSAGE
+)
 
+FAKE_ORGS = {
+    'AAAIMX': {
+        'name': 'AAAIMX',
+        'phone': '9999999',
+        'address': 'MID, MX'
+    },
+    'LHT': {
+        'name': 'Lighthouse Tech',
+        'phone': '111111',
+        'address': 'MID, MX'
+    }
+}
+
+FAKE_USERS = {
+    'ADMIN': {
+        'email': 'admin@test.org',
+        'name': 'Raul Novelo',
+        'password': '12345',
+        'phone': '123456789',
+        'birthdate': datetime.now()
+    },
+    'VIEWER': {
+        'email': 'viewer@test.org',
+        'name': 'Viewer User Example',
+        'password': '12345',
+        'phone': '987654321',
+        'birthdate': datetime.now()
+    },
+    'USER': {
+        'email': 'guest@test.org',
+        'name': 'John Doe',
+        'password': '12345',
+        'phone': '1357908642',
+        'birthdate': datetime.now()
+    }
+}
 
 class APITests(APITestCase):
 
@@ -41,7 +81,6 @@ class APITests(APITestCase):
         API must support JWT authentication.
         POST /api/auth/login/ using email address
         """
-
         # no active account
         data = {'email': 'test@test.org', 'password': '12345'}
         response = self.client.post('/api/auth/login/', data, format='json')
@@ -92,7 +131,7 @@ class APITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.json()
         self.assertEqual(data['count'], 2)
-        self.assertEqual(list(data['results'][0].keys()), USER_MODEL_FIELDS)
+        self.assertEqual(tuple(data['results'][0].keys()), USER_MODEL_FIELDS)
 
         self.client.login(email='viewer@test.org', password='12345')
         response = self.client.get('/api/users/')
@@ -123,7 +162,8 @@ class APITests(APITestCase):
         # validate user and organization fields
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(sorted(list(data.keys())), sorted(USER_INFO_FIELDS))
-        self.assertEqual(sorted(list(data['organization'].keys())), ['id', 'name'])
+        self.assertEqual(
+            sorted(list(data['organization'].keys())), ['id', 'name'])
 
     def test_create_users(self):
         """
@@ -194,7 +234,77 @@ class APITests(APITestCase):
         response = self.client.delete('/api/users/%d/' % viewer.id)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
+    def test_retrieve_org(self):
+        """
+        Retrieve organization information if request user is `Administrator` or `Viewer`
+        """
+        aaaimx = Organization.objects.get(name='AAAIMX')
+        lht = Organization.objects.get(name='Lighthouse Tech')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.client.get('/api/organizations/%d/' % lht.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(list(response.json().keys())),
+                         sorted(ORG_INFO_FIELDS))
+
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_list_org_users(self):
+        """
+        List all the users for the user organization if user is
+        `Administrator` or `Viewer`. Must return just id and name of the user
+        """
+        aaaimx = Organization.objects.get(name='AAAIMX')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/users/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/users/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()['results']), 2)
+
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.get('/api/organizations/%d/users/' % aaaimx.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_org_user_by_id(self):
+        """
+        Retrieve user id and name if if user is `Administrator` or `Viewer`
+        """
+        aaaimx = Organization.objects.get(name='AAAIMX')
+        admin = User.objects.get(email='admin@test.org')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.get(
+            '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.get(
+            '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(sorted(list(response.json().keys())), ['id', 'name'])
+
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.get(
+            '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_info(self):
+        """
+        Should return {`user_name`, `id`, `organization_name`, `public_ip`}
+        Public Ip must be the internet public IP of the server where code is running
+        """
         # sucess access to groups
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -206,8 +316,7 @@ class APITests(APITestCase):
         token = response.json()['access']
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
 
-        # Should return {`user_name`, `id`, `organization_name`, `public_ip`}
-        # Public Ip must be the internet public IP of the server where code is running
+        
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(

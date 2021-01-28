@@ -1,46 +1,26 @@
-from datetime import datetime
+"""
+Constant used in tests and serializers definition
+"""
 
-FAKE_ORGS = {
-    'AAAIMX': {
-        'name': 'AAAIMX',
-        'phone': '9999999',
-        'address': 'MID, MX'
-    },
-    'LHT': {
-        'name': 'Lighthouse Tech',
-        'phone': '111111',
-        'address': 'MID, MX'
-    }
-}
+USER_MODEL_FIELDS = (
+    'id', 'organization', 'groups', 'password', 'last_login', 'is_superuser',
+    'email', 'name', 'birthdate', 'phone', 'date_joined', 'is_staff',
+    'is_active', 'user_permissions'
+)
 
-FAKE_USERS = {
-    'ADMIN': {
-        'email': 'admin@test.org',
-        'name': 'Raul Novelo',
-        'password': '12345',
-        'phone': '123456789',
-        'birthdate': datetime.now()
-    },
-    'VIEWER': {
-        'email': 'viewer@test.org',
-        'name': 'Viewer User Example',
-        'password': '12345',
-        'phone': '987654321',
-        'birthdate': datetime.now()
-    },
-    'USER': {
-        'email': 'guest@test.org',
-        'name': 'John Doe',
-        'password': '12345',
-        'phone': '1357908642',
-        'birthdate': datetime.now()
-    }
-}
+USER_INFO_FIELDS = (
+    'id', 'organization',
+    'email', 'name', 'birthdate', 'phone'
+)
 
-USER_MODEL_FIELDS = ['id', 'organization', 'groups', 'password', 'last_login', 'is_superuser',
-                     'email', 'name', 'birthdate', 'phone', 'date_joined', 'is_staff', 'is_active', 'user_permissions']
+USER_CREATE_FIELDS = (
+    'id', 'name', 'phone', 'email',
+    'birthdate', 'groups', 'password'
+)
 
-USER_INFO_FIELDS = ['id', 'organization', 'email', 'name', 'birthdate', 'phone']
+ORG_INFO_FIELDS = (
+    'id', 'name', 'phone', 'address'
+)
 
 UNAUTHORIZED_MESSAGE = {
     'detail': 'Authentication credentials were not provided.'
