@@ -7,7 +7,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from .models import User, Organization
 from .constants import (
     USER_INFO_FIELDS,
-    USER_MODEL_FIELDS, ORG_INFO_FIELDS, 
+    USER_MODEL_FIELDS, ORG_INFO_FIELDS,
     UNAUTHORIZED_MESSAGE
 )
 
@@ -47,6 +47,7 @@ FAKE_USERS = {
         'birthdate': datetime.now()
     }
 }
+
 
 class APITests(APITestCase):
 
@@ -148,7 +149,7 @@ class APITests(APITestCase):
         # avoid access to users without permissions
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.get('/api/users/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_retrieve_user(self):
         """
@@ -156,7 +157,7 @@ class APITests(APITestCase):
         """
         guest = User.objects.get(email='guest@test.org')
         self.client.login(email='guest@test.org', password='12345')
-        response = self.client.get('/api/users/%d/' % guest.pk)
+        response = self.client.get('/api/users/%d/' % guest.id)
         data = response.json()
 
         # validate user and organization fields
@@ -177,7 +178,7 @@ class APITests(APITestCase):
         }
         self.client.login(email='viewer@test.org', password='12345')
         response = self.client.post('/api/users/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.client.login(email='admin@test.org', password='12345')
         response = self.client.post('/api/users/', data, format='json')
@@ -199,7 +200,7 @@ class APITests(APITestCase):
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.patch(
             '/api/users/%d/' % admin.id, {'email': 'example1@aaaimx.org'}, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # account owner
         response = self.client.patch(
@@ -222,12 +223,12 @@ class APITests(APITestCase):
 
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.delete('/api/users/%d/' % admin.id)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        # account owner
+        # viewer role
         self.client.login(email='viewer@test.org', password='12345')
-        response = self.client.delete('/api/users/%d/' % guest.id)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.client.delete('/api/users/%d/' % admin.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # administrator of the org
         self.client.login(email='admin@test.org', password='12345')
@@ -243,9 +244,9 @@ class APITests(APITestCase):
 
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.get('/api/organizations/%d/' % aaaimx.id)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response = self.client.get('/api/organizations/%d/' % lht.id)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.client.login(email='admin@test.org', password='12345')
         response = self.client.get('/api/organizations/%d/' % aaaimx.id)
@@ -266,7 +267,7 @@ class APITests(APITestCase):
 
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.get('/api/organizations/%d/users/' % aaaimx.id)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.client.login(email='admin@test.org', password='12345')
         response = self.client.get('/api/organizations/%d/users/' % aaaimx.id)
@@ -287,7 +288,7 @@ class APITests(APITestCase):
         self.client.login(email='guest@test.org', password='12345')
         response = self.client.get(
             '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.client.login(email='admin@test.org', password='12345')
         response = self.client.get(
@@ -298,6 +299,29 @@ class APITests(APITestCase):
         self.client.login(email='viewer@test.org', password='12345')
         response = self.client.get(
             '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_org(self):
+        """
+        Update organization if request user is `Administrator`
+        """
+        aaaimx = Organization.objects.get(name='AAAIMX')
+        lht = Organization.objects.get(name='Lighthouse Tech')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # administrator of the org
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_info(self):
@@ -316,7 +340,6 @@ class APITests(APITestCase):
         token = response.json()['access']
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
 
-        
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(

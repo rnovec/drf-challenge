@@ -58,10 +58,10 @@ auth_urlpatterns = [
 ]
 
 apidocs_urlpatterns = [
+    path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     url(r'^swagger(?P<format>\.json|\.yaml)$',
         schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    url(r'^swagger/$', schema_view.with_ui('swagger',
-                                           cache_timeout=0), name='schema-swagger-ui')
+
 ]
 
 api_urlpatterns = [
@@ -74,7 +74,7 @@ api_urlpatterns = [
 urlpatterns = [
     path('', admin.site.urls),
     path('api/', include(api_urlpatterns)),
-    path("auth/", include("rest_framework.urls", namespace="rest_framework")),
+    path("accounts/", include("rest_framework.urls", namespace="rest_framework")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

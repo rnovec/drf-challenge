@@ -1,9 +1,9 @@
 from django.contrib.auth.models import Group
+from django.shortcuts import get_object_or_404
 from rest_framework import (
     viewsets,
     generics,
     status,
-    permissions,
     mixins,
     views
 )
@@ -11,6 +11,11 @@ from rest_framework.compat import coreapi
 from rest_framework.response import Response
 
 from .models import User, Organization
+from .permissions import (
+    OrgPermissions,
+    UserPermissions,
+    UserOrgPermissions
+)
 from .serializers import (
     GroupSerializer,
     UserDefaultSerializer,
@@ -55,49 +60,10 @@ class OrganizationViewSet(mixins.RetrieveModelMixin,
     """
     serializer_class = OrganizationSerializer
     queryset = Organization.objects.all()
+    permission_classes = (OrgPermissions,)
     http_method_names = ['get', 'patch', 'options', 'head']
-
     ordering_fields = []
     ordering = []
-
-    def retrieve(self, request, pk=None):
-        """
-        Retrieve organization information if request user is `Administrator` or `Viewer`
-        """
-        instance = self.get_object()
-
-        is_admin_or_viewer = request.user.groups.filter(
-            name__in=['Administrator', 'Viewer'])
-        is_his_org = request.user.organization.id == instance.id
-
-        if not (is_admin_or_viewer and is_his_org):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        is_admin = request.user.groups.filter(name__in=['Administrator'])
-        is_his_org = request.user.organization.id == instance.id
-
-        if not (is_admin and is_his_org):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Update organization if request user is `Administrator`.
-        """
-        kwargs['partial'] = True
-        return self.update(request, *args, **kwargs)
 
 
 class UserOrganizationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -106,28 +72,30 @@ class UserOrganizationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = UserOrgSerializer
     queryset = User.objects.all()
-
     ordering_fields = []
     ordering = []
 
     def get_queryset(self):
-        pk = self.kwargs['org_id']
-        org = Organization.objects.get(pk=pk)
-        return User.objects.filter(organization=org)
+        pk = self.kwargs.get('org_id')
+        try:
+            org = Organization.objects.get(pk=pk)
+            return User.objects.filter(organization=org)
+        except Organization.DoesNotExist:
+            return User.objects.none()
 
     def list(self, request, *args, **kwargs):
         """
         List all the users for the user organization if user is `Administrator` or `Viewer`.
         """
-        pk = kwargs['org_id']
-        org = Organization.objects.get(pk=pk)
+        org_id = kwargs['org_id']
+        org = Organization.objects.get(pk=org_id)
 
         is_admin_or_viewer = request.user.groups.filter(
             name__in=['Administrator', 'Viewer'])
         is_his_org = request.user.organization == org
 
         if not (is_admin_or_viewer and is_his_org):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -145,10 +113,15 @@ class UserOrganizationViewSet(viewsets.ReadOnlyModelViewSet):
         """
         instance = self.get_object()
 
+        org_id = kwargs['org_id']
+        org = Organization.objects.get(pk=org_id)
+
         is_admin_or_viewer = request.user.groups.filter(
             name__in=['Administrator', 'Viewer'])
-        if not is_admin_or_viewer:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        is_his_org = request.user.organization == org
+
+        if not (is_admin_or_viewer and is_his_org):
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -160,6 +133,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserInfoSerializer
     queryset = User.objects.all()
+    permission_classes = (UserPermissions,)
     http_method_names = ['get', 'post', 'patch', 'delete', 'options', 'head']
 
     filterset_fields = ['phone']
@@ -174,6 +148,10 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserCreateSerializer
         return UserInfoSerializer
 
+    def get_queryset(self):
+        org = self.request.user.organization
+        return User.objects.filter(organization=org)
+
     def list(self, request):
         """
         List all the users for the user organization if user is `Administrator` or `Viewer`.
@@ -181,10 +159,9 @@ class UserViewSet(viewsets.ModelViewSet):
         is_admin_or_viewer = request.user.groups.filter(
             name__in=['Administrator', 'Viewer'])
         if not is_admin_or_viewer:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
-        org = request.user.organization
-        queryset = self.filter_queryset(User.objects.filter(organization=org))
+        queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -201,56 +178,10 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         is_admin = request.user.groups.filter(name__in=['Administrator'])
         if not is_admin:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(org=request.user.organization)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def retrieve(self, request, pk=None):
-        """
-        Retrieve user information, and the organization id and name
-        """
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        is_admin = request.user.groups.filter(name__in=['Administrator'])
-        is_his_org = request.user.organization == instance.organization
-        is_owner = request.user == instance
-
-        if not (is_admin and is_his_org) and not is_owner:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Update user information for the user_id if request user is `Administrator`
-        """
-        kwargs['partial'] = True
-        return self.update(request, *args, **kwargs)
-
-    def destroy(self, request, pk=None):
-        """
-        Delete user for the **user_id** if request user is `Administrator` of his organization
-        """
-        instance = self.get_object()
-
-        is_admin = request.user.groups.filter(name__in=['Administrator'])
-        is_his_org = request.user.organization == instance.organization
-        if not (is_admin and is_his_org):
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
