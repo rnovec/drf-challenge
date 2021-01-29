@@ -346,7 +346,7 @@ class APITests(APITestCase):
             response.json()['user_name'], FAKE_USERS['ADMIN']['name'])
         self.assertEqual(
             response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
-        self.assertEqual(response.json()['public_ip'], 'testserver')
+        self.assertEqual(response.json()['public_ip'], '127.0.0.1')
 
         # login with viewer account
         self.client.login(email='viewer@test.org', password='12345')
@@ -357,4 +357,4 @@ class APITests(APITestCase):
             response.json()['user_name'], FAKE_USERS['VIEWER']['name'])
         self.assertEqual(
             response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
-        self.assertEqual(response.json()['public_ip'], 'testserver')
+        self.assertEqual(response.json()['public_ip'], '127.0.0.1')
