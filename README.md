@@ -15,28 +15,48 @@ This a Django 3.0+ project for Lighthouse DRF Challenge
 
 ## Prerequisites
 
-- Python 3.5>
-- POSTMAN
+- Python 3.7>
 - Virtualenv
-- Git
 
 ## Instalation
 
     $ python3 -m venv venv
     $ source venv/bin/activate
     $ pip install -r requirements.txt
+
+## Environment
+
+Application running in multiple environments like DEV and PROD. All env variables used in this application are available in `.env.example`, feel free to setup your own environment configuration.
+
+### DEV
+
+Just make a copy from `.env.local.example` and/or rename to `.env.local` and setup your variables. Then run in terminal:
+
+    $ source .env.local
+
+The first time you run the application, make sure to apply the database migrations and create a super user account:
+
     $ python manage.py migrate
     $ python manage.py createsuperuser
 
-## Setup environment
-
-Application running in multiple environments like DEV and PROD. Just make a copy from `.env.example`, rename with your environment (i.e. `.env.local` or `.env.production`) and replace variables. Finally run:
-
-    $ source .env.local # or .env.production
-
-## Run project
+Finally start development server:
 
     $ python manage.py runserver
+
+### PROD
+
+Just make a copy from `.env.production.example` and/or rename to `.env.production` and setup your variables. Then run in terminal:
+
+    $ source .env.production
+
+The first time you run the application, make sure to apply the database migrations and create a super user account:
+
+    $ python manage.py migrate
+    $ python manage.py createsuperuser
+
+Finally start production server:
+
+    $ gunicorn project.wsgi --log-level=INFO
 
 ## Run tests
 
