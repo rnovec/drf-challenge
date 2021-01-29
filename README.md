@@ -28,9 +28,19 @@ This a Django 3.0+ project for Lighthouse DRF Challenge
     $ python manage.py migrate
     $ python manage.py createsuperuser
 
+## Setup environment
+
+Application running in multiple environments like DEV and PROD. Just make a copy from `.env.example`, rename with your environment (i.e. `.env.local` or `.env.production`) and replace variables. Finally run:
+
+    $ source .env.local # or .env.production
+
 ## Run project
 
     $ python manage.py runserver
+
+## Run tests
+
+    $ python manage.py tests
 
 ## License
 
