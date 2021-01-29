@@ -7,7 +7,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from .models import User, Organization
 from .constants import (
     USER_INFO_FIELDS,
-    USER_MODEL_FIELDS, ORG_INFO_FIELDS, 
+    USER_MODEL_FIELDS, ORG_INFO_FIELDS,
     UNAUTHORIZED_MESSAGE
 )
 
@@ -47,6 +47,7 @@ FAKE_USERS = {
         'birthdate': datetime.now()
     }
 }
+
 
 class APITests(APITestCase):
 
@@ -300,6 +301,29 @@ class APITests(APITestCase):
             '/api/organizations/%d/users/%d/' % (aaaimx.id, admin.id))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_update_org(self):
+        """
+        Update organization if request user is `Administrator`
+        """
+        aaaimx = Organization.objects.get(name='AAAIMX')
+        lht = Organization.objects.get(name='Lighthouse Tech')
+
+        self.client.login(email='guest@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.client.login(email='viewer@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # administrator of the org
+        self.client.login(email='admin@test.org', password='12345')
+        response = self.client.patch(
+            '/api/organizations/%d/' % aaaimx.id, {'address': 'Palo Alto, USA'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_info(self):
         """
         Should return {`user_name`, `id`, `organization_name`, `public_ip`}
@@ -316,7 +340,6 @@ class APITests(APITestCase):
         token = response.json()['access']
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
 
-        
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
