@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-import datetime
 import os
+import datetime
+import dj_database_url
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -29,7 +31,7 @@ DEBUG = bool(os.environ.get('DEBUG', 0))
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(' ')
 
-ENVIRONMENT = os.environ.get('ENV', 'DEV')
+ENVIRONMENT = os.environ.get('ENVIRONMENT', 'DEV')
 
 # Application definition
 
@@ -140,12 +142,9 @@ DATABASES = {
 }
 
 if ENVIRONMENT == 'PROD':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    print(ENVIRONMENT)
+    URL = os.environ.get('DATABASE_URL', None)
+    DATABASES['default'] = dj_database_url.config(default=URL, conn_max_age=0)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
