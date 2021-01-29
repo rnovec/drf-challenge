@@ -72,6 +72,7 @@ class UserOrganizationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = UserOrgSerializer
     queryset = User.objects.all()
+    permission_classes = (UserOrgPermissions,)
     ordering_fields = []
     ordering = []
 
@@ -82,50 +83,6 @@ class UserOrganizationViewSet(viewsets.ReadOnlyModelViewSet):
             return User.objects.filter(organization=org)
         except Organization.DoesNotExist:
             return User.objects.none()
-
-    def list(self, request, *args, **kwargs):
-        """
-        List all the users for the user organization if user is `Administrator` or `Viewer`.
-        """
-        org_id = kwargs['org_id']
-        org = Organization.objects.get(pk=org_id)
-
-        is_admin_or_viewer = request.user.groups.filter(
-            name__in=['Administrator', 'Viewer'])
-        is_his_org = request.user.organization == org
-
-        if not (is_admin_or_viewer and is_his_org):
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Retrieve user **id** and **name** if user is `Administrator` or `Viewer`
-        """
-        instance = self.get_object()
-
-        org_id = kwargs['org_id']
-        org = Organization.objects.get(pk=org_id)
-
-        is_admin_or_viewer = request.user.groups.filter(
-            name__in=['Administrator', 'Viewer'])
-        is_his_org = request.user.organization == org
-
-        if not (is_admin_or_viewer and is_his_org):
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
 
 class UserViewSet(viewsets.ModelViewSet):
     """

@@ -11,7 +11,7 @@ from .constants import (
     UNAUTHORIZED_MESSAGE
 )
 
-FAKE_ORGS = {
+TEST_ORGS = {
     'AAAIMX': {
         'name': 'AAAIMX',
         'phone': '9999999',
@@ -24,7 +24,7 @@ FAKE_ORGS = {
     }
 }
 
-FAKE_USERS = {
+TEST_USERS = {
     'ADMIN': {
         'email': 'admin@test.org',
         'name': 'Raul Novelo',
@@ -57,23 +57,23 @@ class APITests(APITestCase):
         viewer_group = Group.objects.get(name='Viewer')
 
         # create orgs
-        aaaimx = Organization.objects.create(**FAKE_ORGS['AAAIMX'])
-        lht = Organization.objects.create(**FAKE_ORGS['LHT'])
+        aaaimx = Organization.objects.create(**TEST_ORGS['AAAIMX'])
+        lht = Organization.objects.create(**TEST_ORGS['LHT'])
 
         # create admin user
-        admin_user = User.objects.create_user(**FAKE_USERS['ADMIN'])
+        admin_user = User.objects.create_user(**TEST_USERS['ADMIN'])
         admin_user.groups.add(admin_group)
         admin_user.organization = aaaimx
         admin_user.save()
 
         # create viewer user
-        viewer_user = User.objects.create_user(**FAKE_USERS['VIEWER'])
+        viewer_user = User.objects.create_user(**TEST_USERS['VIEWER'])
         viewer_user.groups.add(viewer_group)
         viewer_user.organization = aaaimx
         viewer_user.save()
 
         # create normal user
-        viewer_user = User.objects.create_user(**FAKE_USERS['USER'])
+        viewer_user = User.objects.create_user(**TEST_USERS['USER'])
         viewer_user.organization = lht
         viewer_user.save()
 
@@ -343,9 +343,9 @@ class APITests(APITestCase):
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            response.json()['user_name'], FAKE_USERS['ADMIN']['name'])
+            response.json()['user_name'], TEST_USERS['ADMIN']['name'])
         self.assertEqual(
-            response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
+            response.json()['organization_name'], TEST_ORGS['AAAIMX']['name'])
         self.assertEqual(response.json()['public_ip'], '127.0.0.1')
 
         # login with viewer account
@@ -354,7 +354,7 @@ class APITests(APITestCase):
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            response.json()['user_name'], FAKE_USERS['VIEWER']['name'])
+            response.json()['user_name'], TEST_USERS['VIEWER']['name'])
         self.assertEqual(
-            response.json()['organization_name'], FAKE_ORGS['AAAIMX']['name'])
+            response.json()['organization_name'], TEST_ORGS['AAAIMX']['name'])
         self.assertEqual(response.json()['public_ip'], '127.0.0.1')

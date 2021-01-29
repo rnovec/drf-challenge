@@ -25,3 +25,6 @@ ORG_INFO_FIELDS = (
 UNAUTHORIZED_MESSAGE = {
     'detail': 'Authentication credentials were not provided.'
 }
+
+ADMIN = 'Administrator'
+VIEWER = 'Viewer'
