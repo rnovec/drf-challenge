@@ -12,6 +12,7 @@ This a Django 3.0+ project for Lighthouse DRF Challenge
 - [Whitenoise](http://whitenoise.evans.io/en/stable/) - Radically simplified static file serving for Python web apps
 - Procfile for running gunicorn with New Relic's Python agent.
 - Support for automatic generation of [OpenAPI](https://www.openapis.org/) schemas.
+- Automated generation of real Swagger/OpenAPI 2.0 schemas from Django REST Framework code with [drf-yasg](https://drf-yasg.readthedocs.io/en/stable/).
 
 ## Prerequisites
 
@@ -60,7 +61,7 @@ Finally start production server:
 
 ## Run tests
 
-    $ python manage.py tests
+    $ python manage.py test
 
 ## License
 

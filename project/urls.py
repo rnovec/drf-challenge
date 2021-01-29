@@ -20,9 +20,11 @@ from django.conf.urls.static import static
 from django.urls import path
 from django.views.generic.base import TemplateView
 
-from rest_framework import routers
-from rest_framework.schemas import get_schema_view
+from rest_framework import routers, permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
 from users.views import (
     UserViewSet,
@@ -30,6 +32,18 @@ from users.views import (
     OrganizationViewSet,
     UserOrganizationViewSet,
     InfoAPIView
+)
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="DRF Exercise API",
+        default_version='v1',
+        description="API for Lighthouse DRF Challenge",
+        contact=openapi.Contact(email="raul.novelo@aaaimx.org"),
+        license=openapi.License(name="MIT License"),
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
 )
 
 router = routers.DefaultRouter()
@@ -43,18 +57,18 @@ auth_urlpatterns = [
     path('groups/', GroupList.as_view(), name='list_auth_groups'),
 ]
 
+apidocs_urlpatterns = [
+    url(r'^swagger(?P<format>\.json|\.yaml)$',
+        schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    url(r'^swagger/$', schema_view.with_ui('swagger',
+                                           cache_timeout=0), name='schema-swagger-ui')
+]
+
 api_urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include(auth_urlpatterns)),
     path('info/', InfoAPIView.as_view()),
-    path('openapi/', get_schema_view(
-        title="DRF API docs",
-        version="1.0.0",
-    ), name='openapi-schema'),
-    path('docs/', TemplateView.as_view(
-        template_name='swagger.html',
-        extra_context={'schema_url': 'openapi-schema'}
-    ), name='swagger-ui'),
+    path('docs/', include(apidocs_urlpatterns))
 ]
 
 urlpatterns = [
