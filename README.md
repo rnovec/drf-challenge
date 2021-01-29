@@ -50,10 +50,11 @@ Just make a copy from `.env.production.example` and/or rename to `.env.productio
 
     $ source .env.production
 
-The first time you run the application, make sure to apply the database migrations and create a super user account:
+The first time you run the application, make sure to apply the database migrations, create a super user account and generate static files:
 
     $ python manage.py migrate
     $ python manage.py createsuperuser
+    $ python manage.py collectstatic --no-input
 
 Finally start production server:
 
