@@ -48,7 +48,7 @@ class InfoAPIView(views.APIView):
             'id': request.user.id,
             'user_name': request.user.name,
             'organization_name': request.user.organization.name,
-            'public_ip': request.get_host()
+            'public_ip': request.META.get('REMOTE_ADDR')
         })
 
 
@@ -182,6 +182,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(org=request.user.organization)
+        serializer.save(org=request.user.organization) # set the same org
+
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
