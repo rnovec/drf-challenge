@@ -11,14 +11,17 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
 import os
-import datetime
+import logging
 import dj_database_url
-
 from pathlib import Path
+
+from .config.applist import INSTALLED_APPS
+from .config.rest_framework import *
+
+logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
@@ -27,74 +30,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.environ.get('DEBUG', 0))
+DEBUG = bool(int(os.environ.get('DEBUG', 0)))
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(' ')
 
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'DEV')
 
-# Application definition
-
-DJANGO_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles'
-)
-
-THIRD_PARTY_APPS = (
-    'drf_yasg',
-    'corsheaders',
-    'rest_framework',
-    'django_filters',
-)
-
-LOCAL_APPS = (
-    'users',
-)
-
-INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS + THIRD_PARTY_APPS
-
-REST_FRAMEWORK = {
-    # Use Django's standard `django.contrib.auth` permissions,
-    # or allow read-only access for unauthenticated users.
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated'
-    ],
-    "DEFAULT_FILTER_BACKENDS": [
-        "django_filters.rest_framework.DjangoFilterBackend",
-        "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
-    ],
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
-    "PAGE_SIZE": 10,
-    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
-}
-
-# Simple JWT
-# https://django-rest-framework-simplejwt.readthedocs.io/en/latest/getting_started.html
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": datetime.timedelta(hours=1),
-    "REFRESH_TOKEN_LIFETIME": datetime.timedelta(days=1),
-    "USER_ID_FIELD": "id",
-    'USER_ID_CLAIM': 'user_id',
-    'UPDATE_LAST_LOGIN': True
-}
-
-# Django Cors Headers
-# https://pypi.org/project/django-cors-headers/
-# CORS_ORIGIN_WHITELIST = os.environ.get("DJANGO_ALLOWED_ORIGINS").split(' ')
-
-CORS_ALLOW_ORIGINS_ALL = True
-CORS_ALLOW_CREDENTIALS = True
+logger.warning('Project started in mode %s and DEBUG=%s' %
+               (ENVIRONMENT, DEBUG))
 
 
 MIDDLEWARE = [
@@ -143,7 +86,6 @@ DATABASES = {
 }
 
 if ENVIRONMENT == 'PROD':
-    print(ENVIRONMENT)
     URL = os.environ.get('DATABASE_URL', None)
     DATABASES['default'] = dj_database_url.config(default=URL, conn_max_age=0)
 
