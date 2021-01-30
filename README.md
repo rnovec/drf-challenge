@@ -1,4 +1,4 @@
-# Lighthouse DRF Challenge Project / RESTful API
+# Django REST API Exercise
 
 This a Django 3.0+ project for Lighthouse DRF Challenge
 
