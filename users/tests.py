@@ -7,8 +7,7 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from .models import User, Organization
 from .constants import (
     USER_INFO_FIELDS,
-    USER_MODEL_FIELDS, ORG_INFO_FIELDS,
-    UNAUTHORIZED_MESSAGE
+    USER_MODEL_FIELDS, ORG_INFO_FIELDS
 )
 
 TEST_ORGS = {
@@ -108,7 +107,6 @@ class APITests(APITestCase):
         # no token provided
         response = self.client.get('/api/auth/groups/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.json(), UNAUTHORIZED_MESSAGE)
 
         # get access token
         data = {'email': 'admin@test.org', 'password': '12345'}
@@ -329,10 +327,9 @@ class APITests(APITestCase):
         Should return {`user_name`, `id`, `organization_name`, `public_ip`}
         Public Ip must be the internet public IP of the server where code is running
         """
-        # sucess access to groups
+        # no token provided
         response = self.client.get('/api/info/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(response.json(), UNAUTHORIZED_MESSAGE)
 
         # get access token
         data = {'email': 'admin@test.org', 'password': '12345'}

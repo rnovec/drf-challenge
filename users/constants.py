@@ -22,9 +22,5 @@ ORG_INFO_FIELDS = (
     'id', 'name', 'phone', 'address'
 )
 
-UNAUTHORIZED_MESSAGE = {
-    'detail': 'Authentication credentials were not provided.'
-}
-
 ADMIN = 'Administrator'
 VIEWER = 'Viewer'
